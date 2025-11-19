@@ -1,8 +1,10 @@
 package com.example.devrelhelper;
 
+import com.example.devrelhelper.model.BlogSection;
 import com.example.devrelhelper.model.Talk;
 import com.example.devrelhelper.model.TalkWrapped;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
@@ -10,6 +12,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Service
+@RegisterReflectionForBinding({
+        TalkWrapped.class,
+        Talk.class,
+        BlogSection.class
+})
 public class TalkWrappedService {
 
     private static final String TEMPLATE_LOCATION = "prompts/talk_wrapped.txt";
