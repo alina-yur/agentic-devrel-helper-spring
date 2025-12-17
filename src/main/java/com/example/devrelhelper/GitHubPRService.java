@@ -3,6 +3,7 @@ package com.example.devrelhelper;
 import com.example.devrelhelper.model.Talk;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -16,6 +17,12 @@ import java.util.Base64;
 import java.util.Map;
 
 @Service
+@RegisterReflectionForBinding({
+    GitHubPRService.GitHubContent.class,
+    GitHubPRService.GitHubRef.class,
+    GitHubPRService.GitHubObject.class,
+    GitHubPRService.GitHubPrResponse.class
+})
 public class GitHubPRService {
 
     private static final Logger log = LoggerFactory.getLogger(GitHubPRService.class);
@@ -24,16 +31,16 @@ public class GitHubPRService {
     private static final String FILE_PATH = "README.md";
     private static final String BASE_BRANCH = "main";
 
-    record GitHubContent(String content, String sha) {
+    public record GitHubContent(String content, String sha) {
     }
 
-    record GitHubRef(GitHubObject object) {
+    public record GitHubRef(GitHubObject object) {
     }
 
-    record GitHubObject(String sha) {
+    public record GitHubObject(String sha) {
     }
 
-    record GitHubPrResponse(String html_url) {
+    public record GitHubPrResponse(String html_url) {
     }
 
     private final RestClient restClient;
