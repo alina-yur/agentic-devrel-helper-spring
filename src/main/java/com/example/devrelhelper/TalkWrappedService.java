@@ -5,10 +5,8 @@ import com.example.devrelhelper.model.Talk;
 import com.example.devrelhelper.model.TalkWrapped;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Service
@@ -19,21 +17,36 @@ import java.util.List;
 })
 public class TalkWrappedService {
 
-    private static final String TEMPLATE_LOCATION = "prompts/talk_wrapped.txt";
+    private static final String PROMPT_TEMPLATE = """
+            You are a concise DevRel helper.
+
+            Inputs:
+            - Talk title: ${title}
+            - Conference: ${conference}
+            - Location: ${location}
+            - Demo links: ${demos}
+
+            Generate JSON with:
+            - tweets: 2-3 items, each ≤280 chars
+            - blogTitle: concise and punchy
+            - blogOverview: 2-3 sentences, friendly and practical
+            - blogSections: 3-5 sections; each has 3-5 short bullets
+
+            Do not invent features beyond the demo links.
+            Return only JSON for com.example.devrelhelper.model.TalkWrapped.
+            """;
 
     private final ChatClient chatClient;
-    private final String template;
 
     public TalkWrappedService(ChatClient.Builder chatClientBuilder) {
         this.chatClient = chatClientBuilder.build();
-        this.template = loadTemplate();
     }
 
     public TalkWrapped generate(Talk in) {
-        String prompt = template
+        String prompt = PROMPT_TEMPLATE
                 .replace("${title}", orEmpty(in.title()))
                 .replace("${conference}", orEmpty(in.conf()))
-                .replace("${shortDesc}", orEmpty(in.shortDesc()))
+                .replace("${location}", orEmpty(in.location()))
                 .replace("${demos}", formatDemos(in.demos()));
 
         return chatClient
@@ -48,7 +61,7 @@ public class TalkWrappedService {
 
         b.append("TITLE: ").append(orEmpty(in.title())).append('\n');
         b.append("CONFERENCE: ").append(orEmpty(in.conf())).append('\n');
-        b.append("DESCRIPTION: ").append(orEmpty(in.shortDesc())).append("\n\n");
+        b.append("LOCATION: ").append(orEmpty(in.location())).append("\n\n");
 
         b.append("TWEETS:\n");
         if (t.tweets() != null) {
@@ -83,15 +96,6 @@ public class TalkWrappedService {
         }
 
         return b.toString();
-    }
-
-    private String loadTemplate() {
-        try {
-            var resource = new ClassPathResource(TEMPLATE_LOCATION);
-            return new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed to load template: " + TEMPLATE_LOCATION, e);
-        }
     }
 
     private static String orEmpty(String s) {

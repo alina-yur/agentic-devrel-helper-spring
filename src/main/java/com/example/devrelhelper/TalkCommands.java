@@ -12,15 +12,34 @@ import java.util.List;
 public class TalkCommands {
 
     private final TalkWrappedService service;
+    private final GitHubPRService githubPRService;
     private final ComponentFlow.Builder flowBuilder;
 
-    public TalkCommands(TalkWrappedService service, ComponentFlow.Builder flowBuilder) {
+    public TalkCommands(TalkWrappedService service, GitHubPRService githubPRService, ComponentFlow.Builder flowBuilder) {
         this.service = service;
+        this.githubPRService = githubPRService;
         this.flowBuilder = flowBuilder;
     }
 
     @ShellMethod(key = "generate-assets", value = "Interactively generate talk assets")
     public String generateAssets() {
+        Talk talk = collectTalkInfo();
+        TalkWrapped wrapped = service.generate(talk);
+        return service.toText(talk, wrapped);
+    }
+
+    @ShellMethod(key = "submit-talk-pr", value = "Submit an upcoming talk as a PR to public-speaking repo")
+    public String submitTalkPR() {
+        Talk talk = collectTalkInfo();
+
+        try {
+            return githubPRService.createPR(talk);
+        } catch (Exception e) {
+            return "Failed to create PR: " + e.getMessage();
+        }
+    }
+
+    private Talk collectTalkInfo() {
         ComponentFlow flow = flowBuilder.clone().reset()
                 .withStringInput("title")
                 .name("Talk title")
@@ -28,8 +47,8 @@ public class TalkCommands {
                 .withStringInput("conference")
                 .name("Conference")
                 .and()
-                .withStringInput("shortDesc")
-                .name("Short description")
+                .withStringInput("location")
+                .name("Location")
                 .and()
                 .build();
 
@@ -37,10 +56,8 @@ public class TalkCommands {
 
         String title = result.getContext().get("title", String.class);
         String conference = result.getContext().get("conference", String.class);
-        String shortDesc = result.getContext().get("shortDesc", String.class);
+        String location = result.getContext().get("location", String.class);
 
-        Talk talk = new Talk(title, conference, shortDesc, List.of());
-        TalkWrapped wrapped = service.generate(talk);
-        return service.toText(talk, wrapped);
+        return new Talk(title, conference, location, List.of());
     }
 }
